@@ -19,12 +19,15 @@ async def get_anime_schedule():
     if cached:
         return cached
 
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.get(
-            f"{BANGUMI_API_BASE}/calendar",
-            headers=HEADERS,
-        )
-        data = resp.json()
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                f"{BANGUMI_API_BASE}/calendar",
+                headers=HEADERS,
+            )
+            data = resp.json()
+    except Exception as e:
+        return {"error": f"获取动漫日程失败: {str(e)}", "items": []}
 
     with get_db() as conn:
         rows = conn.execute("SELECT anime_id FROM anime_following").fetchall()
