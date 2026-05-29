@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import init_db
 from .routers import trending, stock, gold, ai_news, deals, anime
 
-app = FastAPI(title="Personal Dashboard API")
+app = FastAPI(title="Personal Dashboard API", redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,
