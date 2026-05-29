@@ -81,7 +81,7 @@ SOURCE_MAP = {
 }
 
 
-@router.get("/")
+@router.get("")
 async def get_all_trending():
     cache_key = "trending_all"
     cached = get_cached(cache_key)

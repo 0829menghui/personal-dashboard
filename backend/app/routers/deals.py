@@ -32,7 +32,7 @@ async def _fetch_and_parse(url: str) -> list[dict]:
     return items
 
 
-@router.get("/")
+@router.get("")
 async def get_deals():
     cache_key = "deals"
     cached = get_cached(cache_key)

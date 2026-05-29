@@ -12,7 +12,7 @@ HEADERS = {
 }
 
 
-@router.get("/schedule")
+@router.get("schedule")
 async def get_anime_schedule():
     cache_key = "anime_schedule"
     cached = get_cached(cache_key)

@@ -43,7 +43,7 @@ async def _fetch_and_parse(url: str) -> list[dict]:
     return items
 
 
-@router.get("/")
+@router.get("")
 async def get_ai_news():
     cache_key = "ai_news"
     cached = get_cached(cache_key)
