@@ -21,7 +21,7 @@ def _match(entry) -> bool:
 
 
 async def _fetch_and_parse(url: str) -> list[dict]:
-    async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
         resp = await client.get(url)
         content = resp.text
 
