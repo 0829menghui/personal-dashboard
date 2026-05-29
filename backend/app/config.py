@@ -15,10 +15,9 @@ CACHE_TTL = {
 }
 
 AI_RSS_FEEDS = [
-    "https://hnrss.org/frontpage",
     "https://36kr.com/feed",
+    "https://hnrss.org/frontpage",
     "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
-    "https://www.technologyreview.com/feed/",
 ]
 
 AI_KEYWORDS = [

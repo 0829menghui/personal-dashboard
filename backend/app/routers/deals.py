@@ -1,5 +1,7 @@
 import re
 import time
+import asyncio
+import httpx
 import feedparser
 from fastapi import APIRouter
 from ..cache import get_cached, set_cached
@@ -8,8 +10,12 @@ from ..config import CACHE_TTL, DEALS_RSS_FEEDS
 router = APIRouter()
 
 
-def _parse_deals_feed(url: str) -> list[dict]:
-    feed = feedparser.parse(url)
+async def _fetch_and_parse(url: str) -> list[dict]:
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        resp = await client.get(url)
+        content = resp.text
+
+    feed = await asyncio.to_thread(feedparser.parse, content)
     source = feed.feed.get("title", url)
     items = []
     for entry in feed.entries:
@@ -36,7 +42,7 @@ async def get_deals():
     all_items = []
     for url in DEALS_RSS_FEEDS:
         try:
-            all_items.extend(_parse_deals_feed(url))
+            all_items.extend(await _fetch_and_parse(url))
         except Exception:
             continue
 

@@ -1,5 +1,7 @@
 import re
 import time
+import asyncio
+import httpx
 import feedparser
 from fastapi import APIRouter
 from ..cache import get_cached, set_cached
@@ -18,8 +20,12 @@ def _match(entry) -> bool:
     return bool(KEYWORD_PATTERN.search(text))
 
 
-def _parse_feed(url: str) -> list[dict]:
-    feed = feedparser.parse(url)
+async def _fetch_and_parse(url: str) -> list[dict]:
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        resp = await client.get(url)
+        content = resp.text
+
+    feed = await asyncio.to_thread(feedparser.parse, content)
     source = feed.feed.get("title", url)
     items = []
     for entry in feed.entries:
@@ -47,7 +53,7 @@ async def get_ai_news():
     all_items = []
     for url in AI_RSS_FEEDS:
         try:
-            all_items.extend(_parse_feed(url))
+            all_items.extend(await _fetch_and_parse(url))
         except Exception:
             continue
 
