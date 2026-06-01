@@ -25,6 +25,8 @@ async def get_indices():
     import akshare as ak
     try:
         df = ak.stock_zh_index_spot_em(symbol="上证系列指数")
+        if df.empty:
+            return {"error": "暂无行情数据（非交易时段）"}
         indices = []
         for _, row in df.head(10).iterrows():
             indices.append({
@@ -40,7 +42,7 @@ async def get_indices():
         set_cached(cache_key, indices, ttl)
         return indices
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"获取行情失败: {str(e)}"}
 
 
 @router.get("/quotes")
@@ -59,6 +61,8 @@ async def get_quotes():
     import akshare as ak
     try:
         df = ak.stock_zh_a_spot_em()
+        if df.empty:
+            return {"error": "暂无行情数据（非交易时段）"}
         codes = [r["code"] for r in rows]
         filtered = df[df["代码"].isin(codes)]
         quotes = []
@@ -76,7 +80,7 @@ async def get_quotes():
         set_cached(cache_key, quotes, ttl)
         return quotes
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"获取行情失败: {str(e)}"}
 
 
 @router.get("/watchlist")

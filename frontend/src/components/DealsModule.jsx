@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Tag } from "lucide-react";
+import { Zap } from "lucide-react";
 import { useFetch } from "../hooks/useFetch";
 import { fetchDeals } from "../api";
 import ModuleCard from "./ModuleCard";
@@ -20,8 +20,8 @@ export default function DealsModule() {
 
   return (
     <ModuleCard
-      icon={<Tag size={18} />}
-      title="折扣"
+      icon={<Zap size={18} />}
+      title="快讯"
       loading={loading}
       error={error}
       lastUpdated={lastUpdated}

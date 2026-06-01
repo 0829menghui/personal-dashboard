@@ -6,7 +6,7 @@ from ..config import CACHE_TTL
 router = APIRouter()
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
 }
 
 
@@ -34,21 +34,21 @@ async def fetch_weibo() -> list[dict]:
 async def fetch_zhihu() -> list[dict]:
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.get(
-            "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total",
+            "https://www.zhihu.com/api/v4/search/top_search",
             headers={**HEADERS, "Referer": "https://www.zhihu.com/hot"},
         )
         data = resp.json()
-        items = data.get("data", [])
+        words = data.get("top_search", {}).get("words", [])
         return [
             {
                 "rank": i + 1,
-                "title": item.get("target", {}).get("title", ""),
-                "url": f"https://www.zhihu.com/question/{item.get('target', {}).get('id', '')}",
-                "hot_value": int(item.get("detail_text", "0").replace("万热度", "0000").replace(" 热度", "")),
+                "title": item.get("display_query", item.get("query", "")),
+                "url": f"https://www.zhihu.com/search?q={item.get('query', '')}",
+                "hot_value": 0,
                 "source": "zhihu",
                 "tag": "",
             }
-            for i, item in enumerate(items[:30])
+            for i, item in enumerate(words[:30])
         ]
 
 

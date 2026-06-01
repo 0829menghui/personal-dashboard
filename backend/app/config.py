@@ -29,5 +29,5 @@ AI_KEYWORDS = [
 BANGUMI_API_BASE = "https://api.bgm.tv"
 
 DEALS_RSS_FEEDS = [
-    "https://www.smzdm.com/dingyue",
+    "https://rsshub.rssforever.com/36kr/newsflashes",
 ]
