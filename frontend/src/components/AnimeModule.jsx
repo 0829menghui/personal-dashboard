@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Tv, Star, Heart, ExternalLink } from "lucide-react";
+import { Tv, Star, Heart } from "lucide-react";
 import { useFetch } from "../hooks/useFetch";
 import { fetchAnimeSchedule, followAnime, unfollowAnime } from "../api";
 import ModuleCard from "./ModuleCard";
 
-const WEEKDAYS_CN = ["一", "二", "三", "四", "五", "六", "日"];
+const WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
 const CATEGORIES = [
   { key: 1, label: "日漫", types: 1 },
@@ -14,27 +14,23 @@ const CATEGORIES = [
 
 export default function AnimeModule() {
   const today = new Date().getDay();
-  const defaultDay = today === 0 ? 6 : today - 1;
+  const todayIdx = today === 0 ? 6 : today - 1;
   const [category, setCategory] = useState(1);
-  const [day, setDay] = useState(defaultDay);
   const [tick, setTick] = useState(0);
-  const weekRef = useRef(null);
+  const scrollRef = useRef(null);
 
   const cat = CATEGORIES.find((c) => c.key === category) || CATEGORIES[0];
   const fetcher = useCallback(() => fetchAnimeSchedule(cat.types), [cat.types, tick]);
   const { data, loading, error, refresh, lastUpdated } = useFetch(fetcher, 21600000);
 
   const schedule = Array.isArray(data) ? data : [];
-  const currentDay = schedule.find((d) => d.weekday === day + 1);
-  const items = currentDay?.items || [];
 
-  // Auto-scroll today into view
   useEffect(() => {
-    if (schedule.length > 0 && weekRef.current) {
-      const todayBtn = weekRef.current.children[defaultDay];
-      if (todayBtn) todayBtn.scrollIntoView({ inline: "center", behavior: "smooth" });
+    if (schedule.length > 0 && scrollRef.current) {
+      const todayCol = scrollRef.current.querySelector(`[data-day="${todayIdx}"]`);
+      if (todayCol) todayCol.scrollIntoView({ inline: "center", behavior: "smooth" });
     }
-  }, [schedule, defaultDay]);
+  }, [schedule, todayIdx]);
 
   const handleFollow = async (item) => {
     if (item.followed) {
@@ -48,85 +44,71 @@ export default function AnimeModule() {
   return (
     <ModuleCard
       icon={<Tv size={18} />}
-      title="番剧"
+      title="追番日历"
       loading={loading}
       error={error}
       lastUpdated={lastUpdated}
       onRefresh={refresh}
     >
-      {/* Category + Weekday combined */}
-      <div className="anime-header">
-        <div className="tab-bar anime-cat-tabs">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.key}
-              className={`tab ${category === c.key ? "tab-active" : ""}`}
-              onClick={() => setCategory(c.key)}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        <div className="anime-week-tabs" ref={weekRef}>
-          {WEEKDAYS_CN.map((label, i) => {
-            const isToday = i === defaultDay;
-            const isActive = day === i;
-            const count = schedule[i]?.items.length || 0;
-            return (
-              <button
-                key={i}
-                className={`anime-day-tab ${isActive ? "anime-day-active" : ""} ${isToday ? "anime-day-today" : ""}`}
-                onClick={() => setDay(i)}
-              >
-                <span className="anime-day-name">{isToday ? "今" : label}</span>
-                {count > 0 && <span className="anime-day-num">{count}</span>}
-              </button>
-            );
-          })}
-        </div>
+      <div className="tab-bar">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            className={`tab ${category === c.key ? "tab-active" : ""}`}
+            onClick={() => setCategory(c.key)}
+          >
+            {c.label}
+          </button>
+        ))}
       </div>
 
-      <ul className="anime-list">
-        {items.map((item, i) => (
-          <li key={`${item.id}-${i}`} className={`anime-item ${item.followed ? "anime-followed" : ""}`}>
-            {item.image ? (
-              <img
-                src={item.image}
-                alt={item.title}
-                className="anime-cover"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                onError={(e) => { e.target.style.display = "none"; }}
-              />
-            ) : null}
-            <div className="anime-info">
-              <div className="anime-title">
-                {item.pub_index && <span className="anime-ep">{item.pub_index}</span>}
-                {item.name_cn || item.title}
+      <div className="calendar-scroll" ref={scrollRef}>
+        {schedule.map((day, idx) => {
+          const isToday = idx === todayIdx;
+          const items = day.items || [];
+          return (
+            <div key={day.weekday} className={`cal-col ${isToday ? "cal-col-today" : ""}`} data-day={idx}>
+              <div className="cal-day">
+                <span>{day.weekday_cn}</span>
+                {isToday && <span className="cal-today-dot" />}
               </div>
-              <div className="anime-meta">
-                {item.air_time && <span className="anime-time">{item.air_time}</span>}
-                {item.rating > 0 && (
-                  <span className="anime-rating"><Star size={12} />{item.rating.toFixed(1)}</span>
-                )}
-              </div>
+              {items.length === 0 ? (
+                <div className="cal-empty">—</div>
+              ) : (
+                items.map((item, i) => (
+                  <div key={`${item.id}-${i}`} className={`cal-card ${item.followed ? "cal-followed" : ""}`}>
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="cal-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="cal-cover-pl" />
+                    )}
+                    <div className="cal-info">
+                      <div className="cal-title">{item.name_cn || item.title}</div>
+                      <div className="cal-meta">
+                        {item.pub_index && <span>{item.pub_index}</span>}
+                        {item.air_time && <span>{item.air_time}</span>}
+                      </div>
+                    </div>
+                    <button
+                      className={`anime-follow-btn ${item.followed ? "followed" : ""}`}
+                      onClick={() => handleFollow(item)}
+                      title={item.followed ? "取消追番" : "追番"}
+                    >
+                      <Heart size={13} fill={item.followed ? "currentColor" : "none"} />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
-            {item.url && (
-              <a href={item.url} target="_blank" rel="noopener noreferrer" className="anime-play-link" title="观看">
-                <ExternalLink size={14} />
-              </a>
-            )}
-            <button
-              className={`anime-follow-btn ${item.followed ? "followed" : ""}`}
-              onClick={() => handleFollow(item)}
-              title={item.followed ? "取消追番" : "追番"}
-            >
-              <Heart size={14} fill={item.followed ? "currentColor" : "none"} />
-            </button>
-          </li>
-        ))}
-        {items.length === 0 && !loading && <li className="anime-empty">暂无更新</li>}
-      </ul>
+          );
+        })}
+      </div>
     </ModuleCard>
   );
 }
