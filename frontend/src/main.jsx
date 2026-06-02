@@ -1,26 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import Header from "./components/Header";
-import TrendingModule from "./components/TrendingModule";
-import StockModule from "./components/StockModule";
-import GoldModule from "./components/GoldModule";
-import AiNewsModule from "./components/AiNewsModule";
-import DealsModule from "./components/DealsModule";
-import AnimeModule from "./components/AnimeModule";
 import "./styles.css";
 
+const TrendingModule = lazy(() => import("./components/TrendingModule"));
+const StockModule = lazy(() => import("./components/StockModule"));
+const GoldModule = lazy(() => import("./components/GoldModule"));
+const AiNewsModule = lazy(() => import("./components/AiNewsModule"));
+const DealsModule = lazy(() => import("./components/DealsModule"));
+const AnimeModule = lazy(() => import("./components/AnimeModule"));
+
 const TABS = [
-  { key: "all", label: "全部" },
   { key: "trending", label: "热搜" },
   { key: "finance", label: "财经" },
   { key: "news", label: "资讯" },
   { key: "anime", label: "番剧" },
 ];
 
-function App() {
-  const [tab, setTab] = useState("all");
+function Skeleton() {
+  return <div className="skeleton-card"><div className="skeleton-line" /><div className="skeleton-line short" /><div className="skeleton-line" /></div>;
+}
 
-  const show = (key) => tab === "all" || tab === key;
+function App() {
+  const [tab, setTab] = useState("trending");
 
   return (
     <div className="app">
@@ -39,12 +41,12 @@ function App() {
       </nav>
 
       <main className="dashboard-grid">
-        {show("trending") && <TrendingModule />}
-        {show("finance") && <StockModule />}
-        {show("finance") && <GoldModule />}
-        {show("news") && <AiNewsModule />}
-        {show("news") && <DealsModule />}
-        {show("anime") && <AnimeModule />}
+        <Suspense fallback={<Skeleton />}>
+          {tab === "trending" && <TrendingModule />}
+          {tab === "finance" && <><StockModule /><GoldModule /></>}
+          {tab === "news" && <><AiNewsModule /><DealsModule /></>}
+          {tab === "anime" && <AnimeModule />}
+        </Suspense>
       </main>
     </div>
   );

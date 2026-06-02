@@ -308,6 +308,28 @@ a {
 }
 
 /* Skeleton */
+.skeleton-card {
+  padding: 24px;
+}
+
+.skeleton-card .skeleton-line {
+  height: 14px;
+  background: var(--border);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-card .skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
 .skeleton-list {
   display: flex;
   flex-direction: column;
