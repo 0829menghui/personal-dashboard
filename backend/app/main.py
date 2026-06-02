@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import init_db, get_db
-from .routers import trending, stock, gold, ai_news, deals, anime
+from .routers import trending, stock, gold, ai_news, deals, anime, weather, github
 
 app = FastAPI(title="Personal Dashboard API", redirect_slashes=False)
 
@@ -19,6 +19,8 @@ app.include_router(gold.router, prefix="/api/v1/gold", tags=["gold"])
 app.include_router(ai_news.router, prefix="/api/v1/ai-news", tags=["ai-news"])
 app.include_router(deals.router, prefix="/api/v1/deals", tags=["deals"])
 app.include_router(anime.router, prefix="/api/v1/anime", tags=["anime"])
+app.include_router(weather.router, prefix="/api/v1/weather", tags=["weather"])
+app.include_router(github.router, prefix="/api/v1/github", tags=["github"])
 
 
 @app.on_event("startup")

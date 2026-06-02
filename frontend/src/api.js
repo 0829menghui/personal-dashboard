@@ -46,3 +46,10 @@ export const followAnime = (item) =>
   });
 export const unfollowAnime = (id) =>
   request(`/v1/anime/follow/${id}`, { method: "DELETE" });
+
+// Weather
+export const fetchWeather = (city = "Shanghai") => request(`/v1/weather?city=${city}`);
+
+// GitHub
+export const fetchGithubTrending = (language = "", since = "daily") =>
+  request(`/v1/github?language=${language}&since=${since}`);
