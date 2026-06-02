@@ -7,7 +7,7 @@ import ModuleCard from "./ModuleCard";
 const SOURCES = [
   { key: "all", label: "综合" },
   { key: "36kr_ai", label: "36氪AI" },
-  { key: "jiqizhixin", label: "机器之心" },
+  { key: "huxiu_ai", label: "虎嗅AI" },
 ];
 
 function timeAgo(ts) {

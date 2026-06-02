@@ -43,6 +43,6 @@ NEWS_RSS_FEEDS = {
 # Multi-source AI news feeds
 AI_NEWS_SOURCES = {
     "all": ["https://36kr.com/feed"],
-    "jiqizhixin": ["https://rsshub.rssforever.com/jiqizhixin/home"],
     "36kr_ai": ["https://36kr.com/feed"],
+    "huxiu_ai": ["https://rsshub.rssforever.com/huxiu/article"],
 }

@@ -8,9 +8,6 @@ const SOURCES = [
   { key: "weibo", label: "微博" },
   { key: "zhihu", label: "知乎" },
   { key: "bilibili", label: "B站" },
-  { key: "baidu", label: "百度" },
-  { key: "toutiao", label: "头条" },
-  { key: "douyin", label: "抖音" },
 ];
 
 export default function TrendingModule() {
