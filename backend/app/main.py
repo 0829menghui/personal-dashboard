@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import init_db
+from .database import init_db, get_db
 from .routers import trending, stock, gold, ai_news, deals, anime
 
 app = FastAPI(title="Personal Dashboard API", redirect_slashes=False)
@@ -29,3 +29,14 @@ async def startup():
 @app.get("/api/v1/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.post("/api/v1/admin/clear-cache")
+async def clear_cache(key: str = None):
+    """Clear cache entries. If key is provided, clears matching keys. If not, clears all."""
+    with get_db() as conn:
+        if key:
+            conn.execute("DELETE FROM cache WHERE key LIKE ?", (f"%{key}%",))
+        else:
+            conn.execute("DELETE FROM cache")
+    return {"ok": True, "key": key or "all"}
