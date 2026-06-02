@@ -1,8 +1,14 @@
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Zap } from "lucide-react";
 import { useFetch } from "../hooks/useFetch";
 import { fetchDeals } from "../api";
 import ModuleCard from "./ModuleCard";
+
+const SOURCES = [
+  { key: "36kr", label: "36氪" },
+  { key: "huxiu", label: "虎嗅" },
+  { key: "sspai", label: "少数派" },
+];
 
 function timeAgo(ts) {
   if (!ts) return "";
@@ -13,7 +19,8 @@ function timeAgo(ts) {
 }
 
 export default function DealsModule() {
-  const fetcher = useCallback(() => fetchDeals(), []);
+  const [source, setSource] = useState("36kr");
+  const fetcher = useCallback(() => fetchDeals(source), [source]);
   const { data, loading, error, refresh, lastUpdated } = useFetch(fetcher, 900000);
 
   const items = Array.isArray(data) ? data : [];
@@ -27,6 +34,17 @@ export default function DealsModule() {
       lastUpdated={lastUpdated}
       onRefresh={refresh}
     >
+      <div className="tab-bar">
+        {SOURCES.map((s) => (
+          <button
+            key={s.key}
+            className={`tab ${source === s.key ? "tab-active" : ""}`}
+            onClick={() => setSource(s.key)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
       <ul className="deals-list">
         {items.map((item, i) => (
           <li key={i} className="deal-item">

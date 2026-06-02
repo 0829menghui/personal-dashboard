@@ -3,9 +3,9 @@ import time
 import asyncio
 import httpx
 import feedparser
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from ..cache import get_cached, set_cached
-from ..config import CACHE_TTL, DEALS_RSS_FEEDS
+from ..config import CACHE_TTL, NEWS_RSS_FEEDS
 
 router = APIRouter()
 
@@ -33,14 +33,18 @@ async def _fetch_and_parse(url: str) -> list[dict]:
 
 
 @router.get("")
-async def get_deals():
-    cache_key = "deals"
+async def get_deals(source: str = Query(default="36kr", description="News source key")):
+    urls = NEWS_RSS_FEEDS.get(source)
+    if not urls:
+        return {"error": f"Unknown source: {source}", "available": list(NEWS_RSS_FEEDS.keys())}
+
+    cache_key = f"deals_{source}"
     cached = get_cached(cache_key)
     if cached:
         return cached
 
     all_items = []
-    for url in DEALS_RSS_FEEDS:
+    for url in urls:
         try:
             all_items.extend(await _fetch_and_parse(url))
         except Exception:

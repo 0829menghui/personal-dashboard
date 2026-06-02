@@ -6,11 +6,14 @@ async function request(path, options = {}) {
   return res.json();
 }
 
+// Trending
 export const fetchTrending = (source) =>
   request(source ? `/v1/trending/${source}` : "/v1/trending");
 
+// Stock
 export const fetchStockIndices = () => request("/v1/stock/indices");
 export const fetchStockQuotes = () => request("/v1/stock/quotes");
+export const fetchStockSectors = () => request("/v1/stock/sectors");
 export const fetchWatchlist = () => request("/v1/stock/watchlist");
 export const addToWatchlist = (code, name) =>
   request("/v1/stock/watchlist", {
@@ -21,11 +24,19 @@ export const addToWatchlist = (code, name) =>
 export const removeFromWatchlist = (code) =>
   request(`/v1/stock/watchlist/${code}`, { method: "DELETE" });
 
+// Gold
 export const fetchGoldPrice = () => request("/v1/gold/price");
-export const fetchAiNews = () => request("/v1/ai-news");
-export const fetchDeals = () => request("/v1/deals");
+export const fetchLondonGold = () => request("/v1/gold/london");
+export const fetchSilver = () => request("/v1/gold/silver");
 
-export const fetchAnimeSchedule = () => request("/v1/anime/schedule");
+// AI News
+export const fetchAiNews = (source = "all") => request(`/v1/ai-news?source=${source}`);
+
+// Deals / News
+export const fetchDeals = (source = "36kr") => request(`/v1/deals?source=${source}`);
+
+// Anime
+export const fetchAnimeSchedule = (types = 1) => request(`/v1/anime/schedule?types=${types}`);
 export const fetchAnimeFollowing = () => request("/v1/anime/following");
 export const followAnime = (item) =>
   request("/v1/anime/follow", {

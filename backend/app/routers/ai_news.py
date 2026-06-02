@@ -3,9 +3,9 @@ import time
 import asyncio
 import httpx
 import feedparser
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from ..cache import get_cached, set_cached
-from ..config import CACHE_TTL, AI_RSS_FEEDS, AI_KEYWORDS
+from ..config import CACHE_TTL, AI_NEWS_SOURCES, AI_KEYWORDS
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ def _match(entry) -> bool:
     return bool(KEYWORD_PATTERN.search(text))
 
 
-async def _fetch_and_parse(url: str) -> list[dict]:
+async def _fetch_and_parse(url: str, filter_ai: bool = True) -> list[dict]:
     async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
         resp = await client.get(url)
         content = resp.text
@@ -29,7 +29,7 @@ async def _fetch_and_parse(url: str) -> list[dict]:
     source = feed.feed.get("title", url)
     items = []
     for entry in feed.entries:
-        if not _match(entry):
+        if filter_ai and not _match(entry):
             continue
         published = entry.get("published_parsed") or entry.get("updated_parsed")
         ts = time.mktime(published) if published else 0
@@ -44,16 +44,21 @@ async def _fetch_and_parse(url: str) -> list[dict]:
 
 
 @router.get("")
-async def get_ai_news():
-    cache_key = "ai_news"
+async def get_ai_news(source: str = Query(default="all", description="AI news source key")):
+    urls = AI_NEWS_SOURCES.get(source)
+    if not urls:
+        return {"error": f"Unknown source: {source}", "available": list(AI_NEWS_SOURCES.keys())}
+
+    cache_key = f"ai_news_{source}"
     cached = get_cached(cache_key)
     if cached:
         return cached
 
+    filter_ai = (source == "all" or source == "36kr_ai")
     all_items = []
-    for url in AI_RSS_FEEDS:
+    for url in urls:
         try:
-            all_items.extend(await _fetch_and_parse(url))
+            all_items.extend(await _fetch_and_parse(url, filter_ai=filter_ai))
         except Exception:
             continue
 

@@ -31,3 +31,18 @@ BANGUMI_API_BASE = "https://api.bgm.tv"
 DEALS_RSS_FEEDS = [
     "https://rsshub.rssforever.com/36kr/newsflashes",
 ]
+
+# Multi-source news feeds for deals/快讯 module
+NEWS_RSS_FEEDS = {
+    "36kr": ["https://rsshub.rssforever.com/36kr/newsflashes"],
+    "huxiu": ["https://rsshub.rssforever.com/huxiu/article"],
+    "sspai": ["https://rsshub.rssforever.com/sspai/matrix"],
+    "pengpai": ["https://rsshub.rssforever.com/thepaper/featured"],
+}
+
+# Multi-source AI news feeds
+AI_NEWS_SOURCES = {
+    "all": ["https://36kr.com/feed"],
+    "jiqizhixin": ["https://rsshub.rssforever.com/jiqizhixin/home"],
+    "36kr_ai": ["https://36kr.com/feed"],
+}

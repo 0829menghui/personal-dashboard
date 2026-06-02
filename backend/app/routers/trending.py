@@ -14,7 +14,11 @@ async def fetch_weibo() -> list[dict]:
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.get(
             "https://weibo.com/ajax/side/hotSearch",
-            headers=HEADERS,
+            headers={
+                **HEADERS,
+                "Referer": "https://weibo.com/",
+                "X-Requested-With": "XMLHttpRequest",
+            },
         )
         data = resp.json()
         items = data.get("data", {}).get("realtime", [])
@@ -74,10 +78,85 @@ async def fetch_bilibili() -> list[dict]:
         ]
 
 
+async def fetch_baidu() -> list[dict]:
+    """Fetch Baidu hot search via RSSHub."""
+    import asyncio
+    import feedparser
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(
+            "https://rsshub.rssforever.com/baidu/hot",
+            headers=HEADERS,
+        )
+        content = resp.text
+    feed = await asyncio.to_thread(feedparser.parse, content)
+    items = []
+    for i, entry in enumerate(feed.entries[:30]):
+        items.append({
+            "rank": i + 1,
+            "title": entry.get("title", ""),
+            "url": entry.get("link", ""),
+            "hot_value": 0,
+            "source": "baidu",
+            "tag": "",
+        })
+    return items
+
+
+async def fetch_toutiao() -> list[dict]:
+    """Fetch Toutiao trending via RSSHub."""
+    import asyncio
+    import feedparser
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(
+            "https://rsshub.rssforever.com/toutiao/trending",
+            headers=HEADERS,
+        )
+        content = resp.text
+    feed = await asyncio.to_thread(feedparser.parse, content)
+    items = []
+    for i, entry in enumerate(feed.entries[:30]):
+        items.append({
+            "rank": i + 1,
+            "title": entry.get("title", ""),
+            "url": entry.get("link", ""),
+            "hot_value": 0,
+            "source": "toutiao",
+            "tag": "",
+        })
+    return items
+
+
+async def fetch_douyin() -> list[dict]:
+    """Fetch Douyin hot trends via RSSHub."""
+    import asyncio
+    import feedparser
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(
+            "https://rsshub.rssforever.com/douyin/hot",
+            headers=HEADERS,
+        )
+        content = resp.text
+    feed = await asyncio.to_thread(feedparser.parse, content)
+    items = []
+    for i, entry in enumerate(feed.entries[:30]):
+        items.append({
+            "rank": i + 1,
+            "title": entry.get("title", ""),
+            "url": entry.get("link", ""),
+            "hot_value": 0,
+            "source": "douyin",
+            "tag": "",
+        })
+    return items
+
+
 SOURCE_MAP = {
     "weibo": fetch_weibo,
     "zhihu": fetch_zhihu,
     "bilibili": fetch_bilibili,
+    "baidu": fetch_baidu,
+    "toutiao": fetch_toutiao,
+    "douyin": fetch_douyin,
 }
 
 

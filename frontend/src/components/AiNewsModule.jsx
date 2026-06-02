@@ -1,8 +1,14 @@
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Brain } from "lucide-react";
 import { useFetch } from "../hooks/useFetch";
 import { fetchAiNews } from "../api";
 import ModuleCard from "./ModuleCard";
+
+const SOURCES = [
+  { key: "all", label: "综合" },
+  { key: "36kr_ai", label: "36氪AI" },
+  { key: "jiqizhixin", label: "机器之心" },
+];
 
 function timeAgo(ts) {
   if (!ts) return "";
@@ -13,7 +19,8 @@ function timeAgo(ts) {
 }
 
 export default function AiNewsModule() {
-  const fetcher = useCallback(() => fetchAiNews(), []);
+  const [source, setSource] = useState("all");
+  const fetcher = useCallback(() => fetchAiNews(source), [source]);
   const { data, loading, error, refresh, lastUpdated } = useFetch(fetcher, 1800000);
 
   const items = Array.isArray(data) ? data : [];
@@ -27,6 +34,17 @@ export default function AiNewsModule() {
       lastUpdated={lastUpdated}
       onRefresh={refresh}
     >
+      <div className="tab-bar">
+        {SOURCES.map((s) => (
+          <button
+            key={s.key}
+            className={`tab ${source === s.key ? "tab-active" : ""}`}
+            onClick={() => setSource(s.key)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
       <ul className="news-list">
         {items.map((item, i) => (
           <li key={i} className="news-item">

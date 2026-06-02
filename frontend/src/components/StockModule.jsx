@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { TrendingUp, Plus, X } from "lucide-react";
 import { useFetch } from "../hooks/useFetch";
-import { fetchStockIndices, fetchStockQuotes, addToWatchlist, removeFromWatchlist } from "../api";
+import { fetchStockIndices, fetchStockQuotes, fetchStockSectors, addToWatchlist, removeFromWatchlist } from "../api";
 import ModuleCard from "./ModuleCard";
 
 export default function StockModule() {
@@ -12,9 +12,11 @@ export default function StockModule() {
 
   const indicesFetcher = useCallback(() => fetchStockIndices(), []);
   const quotesFetcher = useCallback(() => fetchStockQuotes(), [tick]);
+  const sectorsFetcher = useCallback(() => fetchStockSectors(), []);
 
   const { data: indices, loading: idxLoading, error: idxError, refresh: idxRefresh, lastUpdated: idxUpdated } = useFetch(indicesFetcher, 180000);
   const { data: quotes, loading: qLoading, error: qError, refresh: qRefresh, lastUpdated: qUpdated } = useFetch(quotesFetcher, 180000);
+  const { data: sectors, loading: sLoading, error: sError, refresh: sRefresh, lastUpdated: sUpdated } = useFetch(sectorsFetcher, 300000);
 
   const handleAdd = async () => {
     if (!addCode.trim()) return;
@@ -29,12 +31,16 @@ export default function StockModule() {
     setTick((t) => t + 1);
   };
 
-  const isIndices = tab === "indices";
-  const items = isIndices ? (indices || []) : (quotes || []);
-  const loading = isIndices ? idxLoading : qLoading;
-  const error = isIndices ? idxError : qError;
-  const refresh = isIndices ? idxRefresh : qRefresh;
-  const updated = isIndices ? idxUpdated : qUpdated;
+  const getTabData = () => {
+    switch (tab) {
+      case "indices": return { items: indices || [], loading: idxLoading, error: idxError, refresh: idxRefresh, updated: idxUpdated };
+      case "watchlist": return { items: quotes || [], loading: qLoading, error: qError, refresh: qRefresh, updated: qUpdated };
+      case "sectors": return { items: sectors || [], loading: sLoading, error: sError, refresh: sRefresh, updated: sUpdated };
+      default: return { items: [], loading: false, error: null, refresh: () => {}, updated: null };
+    }
+  };
+
+  const { items, loading, error, refresh, updated } = getTabData();
 
   return (
     <ModuleCard
@@ -46,13 +52,14 @@ export default function StockModule() {
       onRefresh={refresh}
     >
       <div className="tab-bar">
-        <button className={`tab ${isIndices ? "tab-active" : ""}`} onClick={() => setTab("indices")}>大盘</button>
-        <button className={`tab ${!isIndices ? "tab-active" : ""}`} onClick={() => setTab("watchlist")}>自选</button>
+        <button className={`tab ${tab === "indices" ? "tab-active" : ""}`} onClick={() => setTab("indices")}>大盘</button>
+        <button className={`tab ${tab === "sectors" ? "tab-active" : ""}`} onClick={() => setTab("sectors")}>板块</button>
+        <button className={`tab ${tab !== "indices" && tab !== "sectors" ? "tab-active" : ""}`} onClick={() => setTab("watchlist")}>自选</button>
       </div>
       <div className="stock-table">
         <div className="stock-row stock-header-row">
           <span>名称</span><span>最新价</span><span>涨跌幅</span>
-          {!isIndices && <span></span>}
+          {tab === "watchlist" && <span></span>}
         </div>
         {Array.isArray(items) && items.map((item, i) => (
           <div key={i} className="stock-row">
@@ -61,7 +68,7 @@ export default function StockModule() {
             <span className={`stock-change ${item.change_pct >= 0 ? "up" : "down"}`}>
               {item.change_pct >= 0 ? "+" : ""}{item.change_pct?.toFixed(2)}%
             </span>
-            {!isIndices && (
+            {tab === "watchlist" && (
               <button className="icon-btn-xs" onClick={() => handleRemove(item.code)} title="移除">
                 <X size={12} />
               </button>
@@ -69,7 +76,7 @@ export default function StockModule() {
           </div>
         ))}
       </div>
-      {!isIndices && (
+      {tab === "watchlist" && (
         <div className="stock-add">
           <input
             className="stock-input"
