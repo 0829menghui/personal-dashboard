@@ -1,26 +1,42 @@
 import { useState, useCallback } from "react";
-import { Tv, Star, Heart } from "lucide-react";
+import { Tv, Star, Heart, ExternalLink } from "lucide-react";
 import { useFetch } from "../hooks/useFetch";
 import { fetchAnimeSchedule, followAnime, unfollowAnime } from "../api";
 import ModuleCard from "./ModuleCard";
 
 const WEEKDAYS_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
-const ANIME_TYPES = [
-  { key: 1, label: "番剧" },
-  { key: 4, label: "国创" },
+const PLATFORMS = [
+  { key: "bilibili", label: "B站", icon: "📺" },
+  { key: "tencent", label: "腾讯", icon: "🎬" },
+];
+
+const CATEGORIES = [
+  { key: 1, label: "日漫" },
+  { key: 4, label: "国产" },
   { key: 3, label: "电影" },
 ];
+
+// Category → types mapping (only for Bilibili)
+const BILIBILI_TYPES = { 1: 1, 4: 4, 3: 3 };
 
 export default function AnimeModule() {
   const today = new Date().getDay();
   const defaultDay = today === 0 ? 6 : today - 1;
+  const [platform, setPlatform] = useState("bilibili");
+  const [category, setCategory] = useState(1); // 日漫 default
   const [day, setDay] = useState(defaultDay);
-  const [animeType, setAnimeType] = useState(1);
   const [tick, setTick] = useState(0);
 
-  const fetcher = useCallback(() => fetchAnimeSchedule(animeType), [animeType, tick]);
-  const { data, loading, error, refresh, lastUpdated } = useFetch(fetcher, 21600000);
+  const types = BILIBILI_TYPES[category] || 1;
+  const fetcher = useCallback(() => {
+    if (platform === "tencent") return Promise.resolve(null); // No API for Tencent
+    return fetchAnimeSchedule(types);
+  }, [platform, types, tick]);
+  const { data, loading, error, refresh, lastUpdated } = useFetch(
+    platform === "tencent" ? () => Promise.resolve(null) : fetcher,
+    21600000
+  );
 
   const schedule = Array.isArray(data) ? data : [];
   const currentDay = schedule.find((d) => d.weekday === day + 1);
@@ -44,17 +60,33 @@ export default function AnimeModule() {
       lastUpdated={lastUpdated}
       onRefresh={refresh}
     >
+      {/* Platform tabs */}
       <div className="tab-bar">
-        {ANIME_TYPES.map((t) => (
+        {PLATFORMS.map((p) => (
           <button
-            key={t.key}
-            className={`tab ${animeType === t.key ? "tab-active" : ""}`}
-            onClick={() => setAnimeType(t.key)}
+            key={p.key}
+            className={`tab ${platform === p.key ? "tab-active" : ""}`}
+            onClick={() => setPlatform(p.key)}
           >
-            {t.label}
+            {p.label}
           </button>
         ))}
       </div>
+
+      {/* Category tabs */}
+      <div className="tab-bar">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            className={`tab ${category === c.key ? "tab-active" : ""}`}
+            onClick={() => setCategory(c.key)}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Weekday tabs */}
       <div className="tab-bar">
         {WEEKDAYS_CN.map((label, i) => (
           <button
@@ -66,39 +98,66 @@ export default function AnimeModule() {
           </button>
         ))}
       </div>
-      <ul className="anime-list">
-        {items.map((item) => (
-          <li key={item.id} className={`anime-item ${item.followed ? "anime-followed" : ""}`}>
-            {item.image && (
-              <img src={item.image} alt={item.title} className="anime-cover" loading="lazy" />
-            )}
-            <div className="anime-info">
-              <div className="anime-title">
-                {item.pub_index && <span className="anime-ep">{item.pub_index}</span>}
-                {item.name_cn || item.title}
+
+      {/* Content */}
+      {platform === "tencent" ? (
+        <div className="module-placeholder">
+          <p>腾讯视频暂未开放追番API</p>
+          <a
+            href="https://v.qq.com/channel/cartoon"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="external-link"
+          >
+            <ExternalLink size={14} /> 前往腾讯视频动漫频道
+          </a>
+        </div>
+      ) : (
+        <ul className="anime-list">
+          {items.map((item) => (
+            <li key={item.id} className={`anime-item ${item.followed ? "anime-followed" : ""}`}>
+              {item.image && (
+                <img src={item.image} alt={item.title} className="anime-cover" loading="lazy" />
+              )}
+              <div className="anime-info">
+                <div className="anime-title">
+                  {item.pub_index && <span className="anime-ep">{item.pub_index}</span>}
+                  {item.name_cn || item.title}
+                </div>
+                <div className="anime-meta">
+                  {item.rating > 0 && (
+                    <span className="anime-rating">
+                      <Star size={12} /> {item.rating.toFixed(1)}
+                    </span>
+                  )}
+                  {item.air_time && <span className="anime-time">{item.air_time}</span>}
+                </div>
               </div>
-              <div className="anime-meta">
-                {item.rating > 0 && (
-                  <span className="anime-rating">
-                    <Star size={12} /> {item.rating.toFixed(1)}
-                  </span>
-                )}
-                {item.air_time && <span className="anime-time">{item.air_time}</span>}
-              </div>
-            </div>
-            <button
-              className={`anime-follow-btn ${item.followed ? "followed" : ""}`}
-              onClick={() => handleFollow(item)}
-              title={item.followed ? "取消追番" : "追番"}
-            >
-              <Heart size={14} fill={item.followed ? "currentColor" : "none"} />
-            </button>
-          </li>
-        ))}
-        {items.length === 0 && !loading && (
-          <li className="anime-empty">暂无更新</li>
-        )}
-      </ul>
+              {item.url && (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="anime-play-link"
+                  title="观看"
+                >
+                  <ExternalLink size={12} />
+                </a>
+              )}
+              <button
+                className={`anime-follow-btn ${item.followed ? "followed" : ""}`}
+                onClick={() => handleFollow(item)}
+                title={item.followed ? "取消追番" : "追番"}
+              >
+                <Heart size={14} fill={item.followed ? "currentColor" : "none"} />
+              </button>
+            </li>
+          ))}
+          {items.length === 0 && !loading && (
+            <li className="anime-empty">暂无更新</li>
+          )}
+        </ul>
+      )}
     </ModuleCard>
   );
 }

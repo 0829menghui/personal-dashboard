@@ -654,3 +654,55 @@ a {
   color: var(--text-secondary);
   font-size: 13px;
 }
+
+.anime-ep {
+  display: inline-block;
+  font-size: 11px;
+  padding: 0 6px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 3px;
+  margin-right: 6px;
+  font-weight: 500;
+}
+
+.anime-play-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.anime-play-link:hover {
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* Module placeholder (for unavailable platforms) */
+.module-placeholder {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.module-placeholder p {
+  margin-bottom: 12px;
+}
+
+.external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.external-link:hover {
+  text-decoration: underline;
+}
