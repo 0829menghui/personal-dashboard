@@ -69,7 +69,7 @@ async def get_anime_schedule(types: int = Query(default=1, description="1=番剧
         dow = day_data.get("day_of_week", 0)  # 1=Mon, 7=Sun in bilibili
         if dow not in days_map:
             days_map[dow] = []
-        for ep in day_data.get("episodes", []):
+        for ep in day_data.get("seasons", []):
             season_id = ep.get("season_id", 0)
             days_map[dow].append({
                 "id": season_id,
