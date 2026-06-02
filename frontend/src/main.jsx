@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
 import Header from "./components/Header";
 import TrendingModule from "./components/TrendingModule";
@@ -9,21 +9,42 @@ import DealsModule from "./components/DealsModule";
 import AnimeModule from "./components/AnimeModule";
 import "./styles.css";
 
+const TABS = [
+  { key: "all", label: "全部" },
+  { key: "trending", label: "热搜" },
+  { key: "finance", label: "财经" },
+  { key: "news", label: "资讯" },
+  { key: "anime", label: "番剧" },
+];
+
 function App() {
-  const handleRefreshAll = () => {
-    window.location.reload();
-  };
+  const [tab, setTab] = useState("all");
+
+  const show = (key) => tab === "all" || tab === key;
 
   return (
     <div className="app">
-      <Header onRefresh={handleRefreshAll} />
+      <Header />
+
+      <nav className="top-nav">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            className={`nav-tab ${tab === t.key ? "nav-tab-active" : ""}`}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
       <main className="dashboard-grid">
-        <TrendingModule />
-        <StockModule />
-        <GoldModule />
-        <AiNewsModule />
-        <DealsModule />
-        <AnimeModule />
+        {show("trending") && <TrendingModule />}
+        {show("finance") && <StockModule />}
+        {show("finance") && <GoldModule />}
+        {show("news") && <AiNewsModule />}
+        {show("news") && <DealsModule />}
+        {show("anime") && <AnimeModule />}
       </main>
     </div>
   );
