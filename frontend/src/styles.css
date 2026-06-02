@@ -6,6 +6,7 @@
 
 :root {
   --bg: #f0f2f5;
+  --bg-secondary: #e2e8f0;
   --surface: #ffffff;
   --text: #1a1a2e;
   --text-secondary: #64748b;
@@ -25,6 +26,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0f172a;
+    --bg-secondary: #1e293b;
     --surface: #1e293b;
     --text: #e2e8f0;
     --text-secondary: #94a3b8;
@@ -630,6 +632,66 @@ a {
   background: var(--border);
   border-radius: 3px;
   color: var(--text-secondary);
+}
+
+/* Anime weekly layout */
+.anime-weekly {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.anime-day-group {
+  margin-bottom: 4px;
+}
+
+.anime-day-group:last-child {
+  margin-bottom: 0;
+}
+
+.anime-day-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.anime-day-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.anime-today-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+}
+
+.anime-day-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.anime-day-empty {
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.anime-day-today .anime-day-header {
+  background: var(--accent-light);
+}
+
+.anime-day-today .anime-day-label {
+  color: var(--accent);
 }
 
 .anime-follow-btn {
