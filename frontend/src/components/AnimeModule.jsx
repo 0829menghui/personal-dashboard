@@ -7,36 +7,31 @@ import ModuleCard from "./ModuleCard";
 const WEEKDAYS_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 
 const PLATFORMS = [
-  { key: "bilibili", label: "B站", icon: "📺" },
-  { key: "tencent", label: "腾讯", icon: "🎬" },
+  { key: "bilibili", label: "B站" },
+  { key: "tencent", label: "腾讯" },
 ];
 
 const CATEGORIES = [
-  { key: 1, label: "日漫" },
-  { key: 4, label: "国产" },
-  { key: 3, label: "电影" },
+  { key: 1, label: "日漫", types: 1 },
+  { key: 4, label: "国产", types: 4 },
+  { key: 3, label: "电影", types: 3 },
 ];
-
-// Category → types mapping (only for Bilibili)
-const BILIBILI_TYPES = { 1: 1, 4: 4, 3: 3 };
 
 export default function AnimeModule() {
   const today = new Date().getDay();
   const defaultDay = today === 0 ? 6 : today - 1;
   const [platform, setPlatform] = useState("bilibili");
-  const [category, setCategory] = useState(1); // 日漫 default
+  const [category, setCategory] = useState(1);
   const [day, setDay] = useState(defaultDay);
   const [tick, setTick] = useState(0);
 
-  const types = BILIBILI_TYPES[category] || 1;
+  const cat = CATEGORIES.find((c) => c.key === category) || CATEGORIES[0];
   const fetcher = useCallback(() => {
-    if (platform === "tencent") return Promise.resolve(null); // No API for Tencent
-    return fetchAnimeSchedule(types);
-  }, [platform, types, tick]);
-  const { data, loading, error, refresh, lastUpdated } = useFetch(
-    platform === "tencent" ? () => Promise.resolve(null) : fetcher,
-    21600000
-  );
+    if (platform !== "bilibili") return Promise.resolve(null);
+    return fetchAnimeSchedule(cat.types);
+  }, [platform, cat.types, tick]);
+
+  const { data, loading, error, refresh, lastUpdated } = useFetch(fetcher, 21600000);
 
   const schedule = Array.isArray(data) ? data : [];
   const currentDay = schedule.find((d) => d.weekday === day + 1);
@@ -60,7 +55,6 @@ export default function AnimeModule() {
       lastUpdated={lastUpdated}
       onRefresh={refresh}
     >
-      {/* Platform tabs */}
       <div className="tab-bar">
         {PLATFORMS.map((p) => (
           <button
@@ -73,7 +67,6 @@ export default function AnimeModule() {
         ))}
       </div>
 
-      {/* Category tabs */}
       <div className="tab-bar">
         {CATEGORIES.map((c) => (
           <button
@@ -86,7 +79,6 @@ export default function AnimeModule() {
         ))}
       </div>
 
-      {/* Weekday tabs */}
       <div className="tab-bar">
         {WEEKDAYS_CN.map((label, i) => (
           <button
@@ -99,7 +91,6 @@ export default function AnimeModule() {
         ))}
       </div>
 
-      {/* Content */}
       {platform === "tencent" ? (
         <div className="module-placeholder">
           <p>腾讯视频暂未开放追番API</p>
@@ -154,7 +145,7 @@ export default function AnimeModule() {
             </li>
           ))}
           {items.length === 0 && !loading && (
-            <li className="anime-empty">暂无更新</li>
+            <li className="anime-empty">今日暂无更新</li>
           )}
         </ul>
       )}
