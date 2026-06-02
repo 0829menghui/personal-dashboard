@@ -18,11 +18,8 @@ const CATEGORIES = [
 ];
 
 export default function AnimeModule() {
-  const today = new Date().getDay();
-  const defaultDay = today === 0 ? 6 : today - 1;
   const [platform, setPlatform] = useState("bilibili");
   const [category, setCategory] = useState(1);
-  const [day, setDay] = useState(defaultDay);
   const [tick, setTick] = useState(0);
 
   const cat = CATEGORIES.find((c) => c.key === category) || CATEGORIES[0];
@@ -34,8 +31,14 @@ export default function AnimeModule() {
   const { data, loading, error, refresh, lastUpdated } = useFetch(fetcher, 21600000);
 
   const schedule = Array.isArray(data) ? data : [];
-  const currentDay = schedule.find((d) => d.weekday === day + 1);
-  const items = currentDay?.items || [];
+
+  // Flatten all days into one list
+  const allItems = schedule.flatMap((day) =>
+    (day.items || []).map((item) => ({
+      ...item,
+      _weekday: day.weekday_cn || "",
+    }))
+  );
 
   const handleFollow = async (item) => {
     if (item.followed) {
@@ -79,18 +82,6 @@ export default function AnimeModule() {
         ))}
       </div>
 
-      <div className="tab-bar">
-        {WEEKDAYS_CN.map((label, i) => (
-          <button
-            key={i}
-            className={`tab ${day === i ? "tab-active" : ""}`}
-            onClick={() => setDay(i)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {platform === "tencent" ? (
         <div className="module-placeholder">
           <p>腾讯视频暂未开放追番API</p>
@@ -105,23 +96,31 @@ export default function AnimeModule() {
         </div>
       ) : (
         <ul className="anime-list">
-          {items.map((item) => (
-            <li key={item.id} className={`anime-item ${item.followed ? "anime-followed" : ""}`}>
-              {item.image && (
-                <img src={item.image} alt={item.title} className="anime-cover" loading="lazy" />
-              )}
+          {allItems.map((item, i) => (
+            <li key={`${item.id}-${i}`} className={`anime-item ${item.followed ? "anime-followed" : ""}`}>
+              {item.image ? (
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="anime-cover"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => { e.target.style.display = "none"; }}
+                />
+              ) : null}
               <div className="anime-info">
                 <div className="anime-title">
                   {item.pub_index && <span className="anime-ep">{item.pub_index}</span>}
                   {item.name_cn || item.title}
                 </div>
                 <div className="anime-meta">
+                  <span className="anime-weekday">{item._weekday}</span>
+                  {item.air_time && <span className="anime-time">{item.air_time}</span>}
                   {item.rating > 0 && (
                     <span className="anime-rating">
                       <Star size={12} /> {item.rating.toFixed(1)}
                     </span>
                   )}
-                  {item.air_time && <span className="anime-time">{item.air_time}</span>}
                 </div>
               </div>
               {item.url && (
@@ -144,8 +143,8 @@ export default function AnimeModule() {
               </button>
             </li>
           ))}
-          {items.length === 0 && !loading && (
-            <li className="anime-empty">今日暂无更新</li>
+          {allItems.length === 0 && !loading && (
+            <li className="anime-empty">暂无更新</li>
           )}
         </ul>
       )}

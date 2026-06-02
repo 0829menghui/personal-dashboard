@@ -624,6 +624,14 @@ a {
   color: #f59e0b;
 }
 
+.anime-weekday {
+  font-size: 11px;
+  padding: 0 4px;
+  background: var(--border);
+  border-radius: 3px;
+  color: var(--text-secondary);
+}
+
 .anime-follow-btn {
   display: flex;
   align-items: center;
