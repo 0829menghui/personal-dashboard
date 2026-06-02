@@ -12,7 +12,7 @@ HEADERS = {
     "Referer": "https://www.bilibili.com/",
 }
 
-BILIBILI_TIMELINE_URL = "https://bangumi.bilibili.com/web_api/timeline_global"
+BILIBILI_TIMELINE_URL = "https://api.bilibili.com/pgc/web/timeline"
 
 TYPE_MAP = {
     "bangumi": 1,   # 番剧 (日本动画)
@@ -50,7 +50,7 @@ async def get_anime_schedule(types: int = Query(default=1, description="1=番剧
             resp = await client.get(
                 BILIBILI_TIMELINE_URL,
                 headers=HEADERS,
-                params={"types": types},
+                params={"types": types, "before": 3, "after": 7},
             )
             data = resp.json()
     except Exception as e:
@@ -69,7 +69,7 @@ async def get_anime_schedule(types: int = Query(default=1, description="1=番剧
         dow = day_data.get("day_of_week", 0)  # 1=Mon, 7=Sun in bilibili
         if dow not in days_map:
             days_map[dow] = []
-        for ep in day_data.get("seasons", []):
+        for ep in day_data.get("episodes", []):
             season_id = ep.get("season_id", 0)
             days_map[dow].append({
                 "id": season_id,
