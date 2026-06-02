@@ -1,7 +1,8 @@
 import httpx
+import asyncio
 from datetime import datetime
-from fastapi import APIRouter, Query
-from ..cache import get_cached, set_cached
+from fastapi import APIRouter, Query, BackgroundTasks
+from ..cache import get_cached, set_cached, get_stale
 from ..config import CACHE_TTL
 from ..database import get_db
 
@@ -13,60 +14,13 @@ HEADERS = {
 }
 
 BILIBILI_TIMELINE_URL = "https://api.bilibili.com/pgc/web/timeline"
-
-TYPE_MAP = {
-    "bangumi": 1,   # 番剧 (日本动画)
-    "guochuang": 4,  # 国创 (国产动画)
-    "movie": 3,      # 电影 (动画电影)
-}
-
 WEEKDAYS_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
 
-def _day_to_weekday(date_str: str) -> int:
-    """Convert '6-2' to weekday number (1=Mon, 7=Sun)."""
-    try:
-        parts = date_str.split("-")
-        month, day = int(parts[0]), int(parts[1])
-        now = datetime.now()
-        year = now.year
-        if month < now.month or (month == now.month and day < now.day):
-            year += 1
-        dt = datetime(year, month, day)
-        return dt.isoweekday()
-    except Exception:
-        return 1
-
-
-@router.get("/schedule")
-async def get_anime_schedule(types: int = Query(default=1, description="1=番剧, 4=国创, 3=电影")):
-    cache_key = f"anime_schedule_{types}"
-    cached = get_cached(cache_key)
-    if cached:
-        return cached
-
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(
-                BILIBILI_TIMELINE_URL,
-                headers=HEADERS,
-                params={"types": types, "before": 3, "after": 7},
-            )
-            data = resp.json()
-    except Exception as e:
-        return {"error": f"获取番剧日程失败: {str(e)}", "items": []}
-
-    if data.get("code") != 0:
-        return {"error": f"API 返回错误: {data.get('message', '未知错误')}", "items": []}
-
-    with get_db() as conn:
-        rows = conn.execute("SELECT anime_id FROM anime_following").fetchall()
-    following_ids = {r["anime_id"] for r in rows}
-
-    # Group episodes by day_of_week
+def _build_schedule(data: dict, following_ids: set) -> list:
     days_map = {}
     for day_data in data.get("result", []):
-        dow = day_data.get("day_of_week", 0)  # 1=Mon, 7=Sun in bilibili
+        dow = day_data.get("day_of_week", 0)
         if dow not in days_map:
             days_map[dow] = []
         for ep in day_data.get("episodes", []):
@@ -83,17 +37,78 @@ async def get_anime_schedule(types: int = Query(default=1, description="1=番剧
                 "url": ep.get("url", ""),
                 "followed": season_id in following_ids,
             })
-
     schedule = []
     for dow in range(1, 8):
         items = days_map.get(dow, [])
         schedule.append({
             "weekday": dow,
-            "weekday_cn": WEEKDAYS_CN[dow - 1] if dow <= 7 else "",
+            "weekday_cn": WEEKDAYS_CN[dow - 1],
             "weekday_en": "",
             "items": items,
         })
+    return schedule
 
+
+async def _refresh_cache(types: int):
+    """Fetch fresh data and update cache in background."""
+    cache_key = f"anime_schedule_{types}"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                BILIBILI_TIMELINE_URL,
+                headers=HEADERS,
+                params={"types": types, "before": 3, "after": 7},
+            )
+            data = resp.json()
+        if data.get("code") != 0:
+            return
+        with get_db() as conn:
+            rows = conn.execute("SELECT anime_id FROM anime_following").fetchall()
+        following_ids = {r["anime_id"] for r in rows}
+        schedule = _build_schedule(data, following_ids)
+        set_cached(cache_key, schedule, CACHE_TTL["anime"])
+    except Exception:
+        pass
+
+
+@router.get("/schedule")
+async def get_anime_schedule(
+    types: int = Query(default=1, description="1=番剧, 4=国创, 3=电影"),
+    background_tasks: BackgroundTasks = None,
+):
+    cache_key = f"anime_schedule_{types}"
+
+    # Return fresh cache if available
+    cached = get_cached(cache_key)
+    if cached:
+        return cached
+
+    # Return stale cache immediately, refresh in background
+    stale = get_stale(cache_key)
+    if stale and background_tasks is not None:
+        background_tasks.add_task(_refresh_cache, types)
+        return stale
+
+    # No cache at all — must fetch synchronously
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                BILIBILI_TIMELINE_URL,
+                headers=HEADERS,
+                params={"types": types, "before": 3, "after": 7},
+            )
+            data = resp.json()
+    except Exception as e:
+        return {"error": f"获取番剧日程失败: {str(e)}", "items": []}
+
+    if data.get("code") != 0:
+        return {"error": f"API 返回错误: {data.get('message', '未知错误')}", "items": []}
+
+    with get_db() as conn:
+        rows = conn.execute("SELECT anime_id FROM anime_following").fetchall()
+    following_ids = {r["anime_id"] for r in rows}
+
+    schedule = _build_schedule(data, following_ids)
     set_cached(cache_key, schedule, CACHE_TTL["anime"])
     return schedule
 

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Tv, Heart, ChevronDown, ChevronUp } from "lucide-react";
 import { useFetch } from "../hooks/useFetch";
 import { fetchAnimeSchedule, followAnime, unfollowAnime } from "../api";
@@ -14,26 +14,21 @@ export default function AnimeModule() {
   const today = new Date().getDay();
   const todayIdx = today === 0 ? 6 : today - 1;
   const [category, setCategory] = useState(1);
-  const [collapsed, setCollapsed] = useState({});
+  const [expanded, setExpanded] = useState(() => ({ [todayIdx]: true }));
   const [tick, setTick] = useState(0);
 
   const cat = CATEGORIES.find((c) => c.key === category) || CATEGORIES[0];
   const fetcher = useCallback(() => fetchAnimeSchedule(cat.types), [cat.types, tick]);
   const { data, loading, error, refresh, lastUpdated } = useFetch(fetcher, 21600000);
 
-  const schedule = Array.isArray(data) ? data : [];
-
-  // Default: collapse all days except today
-  const getCollapsed = (idx) => {
-    if (idx in collapsed) return collapsed[idx];
-    return idx !== todayIdx;
-  };
+  const schedule = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
   const toggleDay = (idx) => {
-    setCollapsed((prev) => ({ ...prev, [idx]: !getCollapsed(idx) }));
+    setExpanded((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   const handleFollow = async (item) => {
+    // Optimistic update
     if (item.followed) {
       await unfollowAnime(item.id);
     } else {
@@ -67,7 +62,8 @@ export default function AnimeModule() {
         {schedule.map((day, idx) => {
           const isToday = idx === todayIdx;
           const items = day.items || [];
-          const isCollapsed = getCollapsed(idx);
+          const isOpen = expanded[idx] || false;
+
           return (
             <div key={day.weekday} className={`anime-day ${isToday ? "anime-day-now" : ""}`}>
               <button className="anime-day-bar" onClick={() => toggleDay(idx)}>
@@ -78,44 +74,47 @@ export default function AnimeModule() {
                 <span className="anime-day-info">
                   {items.length > 0 ? `${items.length}部` : "暂无"}
                 </span>
-                {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
-              {!isCollapsed && items.length > 0 && (
-                <ul className="anime-list">
-                  {items.map((item, i) => (
-                    <li key={`${item.id}-${i}`} className={`anime-item ${item.followed ? "anime-followed" : ""}`}>
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="anime-cover"
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                          onError={(e) => { e.target.style.display = "none"; }}
-                        />
-                      ) : (
-                        <div className="anime-cover anime-cover-pl" />
-                      )}
-                      <div className="anime-info">
-                        <div className="anime-title">{item.name_cn || item.title}</div>
-                        <div className="anime-meta">
-                          {item.pub_index && <span>{item.pub_index}</span>}
-                          {item.air_time && <span>{item.air_time}</span>}
-                        </div>
-                      </div>
-                      <button
-                        className={`anime-follow-btn ${item.followed ? "followed" : ""}`}
-                        onClick={() => handleFollow(item)}
-                        title={item.followed ? "取消追番" : "追番"}
-                      >
-                        <Heart size={15} fill={item.followed ? "currentColor" : "none"} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {!isCollapsed && items.length === 0 && (
-                <div className="anime-empty">暂无更新</div>
+              {isOpen && (
+                <>
+                  {items.length === 0 ? (
+                    <div className="anime-empty">暂无更新</div>
+                  ) : (
+                    <ul className="anime-list">
+                      {items.map((item, i) => (
+                        <li key={`${item.id}-${i}`} className={`anime-item ${item.followed ? "anime-followed" : ""}`}>
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt=""
+                              className="anime-cover"
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => { e.target.style.display = "none"; }}
+                            />
+                          ) : (
+                            <div className="anime-cover anime-cover-pl" />
+                          )}
+                          <div className="anime-info">
+                            <div className="anime-title">{item.name_cn || item.title}</div>
+                            <div className="anime-meta">
+                              {item.pub_index && <span>{item.pub_index}</span>}
+                              {item.air_time && <span>{item.air_time}</span>}
+                            </div>
+                          </div>
+                          <button
+                            className={`anime-follow-btn ${item.followed ? "followed" : ""}`}
+                            onClick={() => handleFollow(item)}
+                            title={item.followed ? "取消追番" : "追番"}
+                          >
+                            <Heart size={15} fill={item.followed ? "currentColor" : "none"} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
               )}
             </div>
           );
